@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorting Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #09090f;
+  --surface: #111118;
+  --surface2: #16161f;
+  --border: #1e1e2e;
+  --accent: #7c5cfc;
+  --pink: #fc5c7d;
+  --cyan: #56c2e6;
+  --green: #5cfc9a;
+  --orange: #fca85c;
+  --text: #e8e8f0;
+  --muted: #50506a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  padding: 2.5rem 2rem;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  background: linear-gradient(100deg, #7c5cfc 0%, #fc5c7d 50%, #56c2e6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.25rem;
+}
+.subtitle {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 2.2rem;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: flex-end;
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.ctrl-group label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+input[type="text"] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
+  width: 310px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input[type="text"]:focus { border-color: var(--accent); }
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 150px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+.speed-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+.btn-group { display: flex; gap: 0.5rem; align-self: flex-end; }
+button {
+  padding: 0.6rem 1.3rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+button:hover { border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover { background: #6a48e0; }
+button.danger { border-color: var(--pink); color: var(--pink); }
+button.danger:hover { background: var(--pink); color: #fff; }
+button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.legend-box {
+  width: 13px; height: 13px;
+  border-radius: 4px;
+  border: 2px solid;
+}
+
+/* Algo sections */
+.algo-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.4rem 1.6rem;
+  margin-bottom: 1.1rem;
+  transition: border-color 0.25s;
+}
+.algo-section.running { border-color: var(--accent); }
+.algo-section.done { border-color: var(--green); }
+
+.algo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+.algo-title { font-weight: 800; font-size: 1rem; letter-spacing: -0.02em; }
+.algo-complexity {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.algo-stats {
+  display: flex;
+  gap: 1.8rem;
+  margin-bottom: 1rem;
+}
+.stat { display: flex; flex-direction: column; }
+.stat-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.stat-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+.v-cmp { color: var(--accent); }
+.v-swp { color: var(--pink); }
+.v-time { color: var(--cyan); }
+
+/* The moving element track */
+.elem-track {
+  position: relative;
+  overflow: visible;
+  margin-bottom: 0.7rem;
+}
+
+/* Individual blocks */
+.elem-block {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  user-select: none;
+  transition:
+    transform 0.19s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.1s,
+    border-color 0.1s,
+    color 0.1s,
+    box-shadow 0.1s;
+  z-index: 1;
+}
+.elem-block[data-state="compare"] {
+  background: rgba(124,92,252,0.18);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 14px rgba(124,92,252,0.35);
+  z-index: 2;
+}
+.elem-block[data-state="swap"] {
+  background: rgba(252,92,125,0.18);
+  border-color: var(--pink);
+  color: var(--pink);
+  box-shadow: 0 0 14px rgba(252,92,125,0.4);
+  z-index: 3;
+}
+.elem-block[data-state="pivot"] {
+  background: rgba(252,168,92,0.18);
+  border-color: var(--orange);
+  color: var(--orange);
+  box-shadow: 0 0 14px rgba(252,168,92,0.35);
+  z-index: 2;
+}
+.elem-block[data-state="min"] {
+  background: rgba(86,194,230,0.18);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 14px rgba(86,194,230,0.35);
+  z-index: 2;
+}
+.elem-block[data-state="sorted"] {
+  background: rgba(92,252,154,0.12);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.algo-status {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  min-height: 1.1rem;
+}
+.algo-status.done { color: var(--green); }
+
+/* Performance comparison */
+.perf-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.6rem;
+  margin-bottom: 2rem;
+  display: none;
+}
+.perf-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+  color: var(--text);
+}
+.perf-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.perf-col { flex: 1; min-width: 130px; }
+.perf-algo-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 0.7rem;
+}
+.perf-row { margin-bottom: 0.55rem; }
+.perf-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.perf-bar-bg {
+  height: 5px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+.perf-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.7s ease;
+  width: 0%;
+}
+.perf-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+footer {
+  text-align: center;
+  margin-top: 3.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.76rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+footer span { color: var(--accent); font-weight: 700; }
+
+@media (max-width: 640px) {
+  body { padding: 1rem; }
+  input[type="text"] { width: 100%; }
+  .controls { flex-direction: column; align-items: flex-start; }
+}
+
+/* README section */
+.readme-section {
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+.readme-toggle {
+  width: 100%;
+  padding: 0.8rem 1.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+}
+.readme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.readme-toggle.open { border-color: var(--accent); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.readme-body {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  padding: 1.8rem;
+}
+.readme-body.open { display: block; }
+.readme-content h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(90deg, #7c5cfc, #fc5c7d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+.readme-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+.readme-content h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 1.2rem 0 0.6rem;
+  font-family: 'Space Mono', monospace;
+}
+.readme-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.readme-table th {
+  color: var(--muted);
+  text-align: left;
+  padding: 0.3rem 0.8rem 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.readme-table td {
+  padding: 0.3rem 0.8rem 0.3rem 0;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.readme-content ul {
+  list-style: none;
+  padding: 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 2;
+}
+.readme-content ul li::before { content: '→ '; color: var(--accent); }
+.readme-content code {
+  background: var(--surface2);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--cyan);
+}
+.readme-author {
+  margin-top: 1.5rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.readme-author span { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>Sorting Visualizer</h1>
+<p class="subtitle">// bubble · insertion · selection · merge · quick — elements physically move</p>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <label>Your Array (comma-separated, max 30 elements)</label>
+    <input type="text" id="arrayInput" placeholder="e.g. 12, 5, 33, 8, 21, 17, 3, 45, 2" />
+  </div>
+  <div class="ctrl-group">
+    <label>Speed — <span class="speed-val" id="speedLabel">Medium</span></label>
+    <input type="range" id="speedRange" min="1" max="5" value="3" />
+  </div>
+  <div class="btn-group">
+    <button class="primary" id="btnStart">▶ Sort All</button>
+    <button id="btnRandom">⟳ Random</button>
+    <button class="danger" id="btnReset">✕ Reset</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-box" style="border-color:#7c5cfc;background:rgba(124,92,252,0.18)"></div>comparing
+  </div>
+  <div class="legend-item">
+    <div class="legend-box" style="border-color:#fc5c7d;background:rgba(252,92,125,0.18)"></div>swapping
+  </div>
+  <div class="legend-item">
+    <div class="legend-box" style="border-color:#fca85c;background:rgba(252,168,92,0.18)"></div>pivot
+  </div>
+  <div class="legend-item">
+    <div class="legend-box" style="border-color:#56c2e6;background:rgba(86,194,230,0.18)"></div>minimum
+  </div>
+  <div class="legend-item">
+    <div class="legend-box" style="border-color:#5cfc9a;background:rgba(92,252,154,0.12)"></div>sorted
+  </div>
+</div>
+
+<div id="algoSections"></div>
+
+<div class="perf-section" id="perfSection">
+  <div class="perf-title">Performance Comparison</div>
+  <div class="perf-grid" id="perfGrid"></div>
+</div>
+
+<!-- README Section -->
+<div class="readme-section">
+  <button class="readme-toggle" id="readmeToggle">📄 About this project</button>
+  <div class="readme-body" id="readmeBody">
+    <div class="readme-content">
+      <h2>algo-sort-viz</h2>
+      <p class="readme-sub">An interactive browser-based tool that visualizes 5 classic sorting algorithms <strong>simultaneously</strong> — the array elements physically move and slide into place in real time.</p>
+
+      <h3>Algorithms</h3>
+      <table class="readme-table">
+        <tr><th>Algorithm</th><th>Time Complexity</th><th>Space</th></tr>
+        <tr><td>Bubble Sort</td><td>O(n²)</td><td>O(1)</td></tr>
+        <tr><td>Insertion Sort</td><td>O(n²)</td><td>O(1)</td></tr>
+        <tr><td>Selection Sort</td><td>O(n²)</td><td>O(1)</td></tr>
+        <tr><td>Merge Sort</td><td>O(n log n)</td><td>O(n)</td></tr>
+        <tr><td>Quick Sort</td><td>O(n log n) avg</td><td>O(log n)</td></tr>
+      </table>
+
+      <h3>Features</h3>
+      <ul>
+        <li>Elements physically move — each number is a tile that slides to its new position during swaps</li>
+        <li>All 5 algorithms run in parallel — compare them side by side in real time</li>
+        <li>Custom array input — enter your own comma-separated numbers</li>
+        <li>Speed control — 5 levels from Slowest to Turbo</li>
+        <li>Live stats — comparisons, swaps, and elapsed time per algorithm</li>
+        <li>Performance comparison panel shown after sorting completes</li>
+      </ul>
+
+      <h3>Color Legend</h3>
+      <ul>
+        <li><span style="color:#7c5cfc">■</span> Purple — comparing</li>
+        <li><span style="color:#fc5c7d">■</span> Pink — swapping</li>
+        <li><span style="color:#fca85c">■</span> Orange — pivot (Quick Sort)</li>
+        <li><span style="color:#56c2e6">■</span> Cyan — current minimum (Selection Sort)</li>
+        <li><span style="color:#5cfc9a">■</span> Green — sorted</li>
+      </ul>
+
+      <h3>Tech Stack</h3>
+      <ul>
+        <li>Pure HTML / CSS / JavaScript — zero dependencies, zero frameworks</li>
+        <li>CSS <code>transform: translateX()</code> with transitions for smooth block movement</li>
+        <li>async/await + setTimeout for step-by-step animation control</li>
+        <li>All algorithms run concurrently via Promise.all</li>
+      </ul>
+
+      <p class="readme-author">Made by <span>Abdulrazzak Kouwider</span></p>
+    </div>
+  </div>
+</div>
+
+<footer>done by <span>Abdulrazzak Kouwider</span></footer>
+
+<script>
+const ALGOS = [
+  { id: 'bubble',    name: 'Bubble Sort',    complexity: 'O(n²) avg',      color: '#7c5cfc' },
+  { id: 'insertion', name: 'Insertion Sort', complexity: 'O(n²) avg',      color: '#fc5c7d' },
+  { id: 'selection', name: 'Selection Sort', complexity: 'O(n²) avg',      color: '#56c2e6' },
+  { id: 'merge',     name: 'Merge Sort',     complexity: 'O(n log n)',      color: '#5cfc9a' },
+  { id: 'quick',     name: 'Quick Sort',     complexity: 'O(n log n) avg', color: '#fca85c' },
+];
+
+const SPEED_DELAYS = { 1: 700, 2: 260, 3: 90, 4: 22, 5: 3 };
+const SPEED_NAMES  = { 1: 'Slowest', 2: 'Slow', 3: 'Medium', 4: 'Fast', 5: 'Turbo' };
+
+let baseArray = [];
+let running = false;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function getDelay() { return SPEED_DELAYS[document.getElementById('speedRange').value]; }
+
+/* ── AlgoViz: manages one algorithm's block track ── */
+class AlgoViz {
+  constructor(id, array) {
+    this.id   = id;
+    this.arr  = [...array];
+    this.n    = array.length;
+    this.cmp  = 0;
+    this.swp  = 0;
+    this.track = document.getElementById(`track-${id}`);
+
+    // blockAt[slot] = DOM element visually occupying that slot
+    this.blockAt = [];
+    this._build();
+  }
+
+  _build() {
+    this.track.innerHTML = '';
+    this.blockAt = [];
+
+    const trackW = this.track.clientWidth || 860;
+    // Divide space evenly
+    this.stride  = Math.floor(trackW / this.n);
+    this.blockW  = Math.max(14, this.stride - (this.n > 20 ? 3 : 5));
+    const fontSize = this.blockW < 22 ? '0.55rem'
+                   : this.blockW < 30 ? '0.65rem'
+                   : this.blockW < 40 ? '0.72rem' : '0.78rem';
+    const radius   = this.blockW < 22 ? '5px' : '9px';
+    const trackH   = Math.max(50, this.blockW + 16);
+    this.track.style.height = trackH + 'px';
+
+    this.arr.forEach((val, i) => {
+      const b = document.createElement('div');
+      b.className  = 'elem-block';
+      b.textContent = val;
+      b.style.width        = this.blockW + 'px';
+      b.style.height       = this.blockW + 'px';
+      b.style.fontSize     = fontSize;
+      b.style.borderRadius = radius;
+      b.style.transform    = `translateY(-50%) translateX(${i * this.stride}px)`;
+      this.track.appendChild(b);
+      this.blockAt[i] = b;
+    });
+  }
+
+  /* ── state helpers ── */
+  setState(slot, state) {
+    if (this.blockAt[slot]) this.blockAt[slot].dataset.state = state;
+  }
+  clearState(slot) {
+    if (this.blockAt[slot]) this.blockAt[slot].dataset.state = '';
+  }
+  setSorted(slot) { this.setState(slot, 'sorted'); }
+  markAllSorted() { for (let i = 0; i < this.n; i++) this.setSorted(i); }
+
+  /* ── core move: swap two slots visually and logically ── */
+  async swap(i, j, skipHighlight = false) {
+    this.swp++;
+    const bi = this.blockAt[i];
+    const bj = this.blockAt[j];
+    if (!skipHighlight) { bi.dataset.state = 'swap'; bj.dataset.state = 'swap'; }
+
+    [this.arr[i], this.arr[j]]         = [this.arr[j], this.arr[i]];
+    [this.blockAt[i], this.blockAt[j]] = [this.blockAt[j], this.blockAt[i]];
+
+    bi.style.transform = `translateY(-50%) translateX(${j * this.stride}px)`;
+    bj.style.transform = `translateY(-50%) translateX(${i * this.stride}px)`;
+
+    await sleep(getDelay());
+    if (!skipHighlight) { bi.dataset.state = ''; bj.dataset.state = ''; }
+  }
+
+  /* ── stats / UI ── */
+  tick() {
+    document.getElementById(`cmp-${this.id}`).textContent = this.cmp;
+    document.getElementById(`swp-${this.id}`).textContent = this.swp;
+  }
+  setTime(ms) { document.getElementById(`time-${this.id}`).textContent = ms + 'ms'; }
+  setStatus(msg, done = false) {
+    const el = document.getElementById(`status-${this.id}`);
+    el.textContent = msg;
+    el.className = 'algo-status' + (done ? ' done' : '');
+  }
+  setCard(state) {
+    document.getElementById(`section-${this.id}`).className = 'algo-section ' + (state || '');
+  }
+}
+
+/* ── Sorting algorithms ── */
+
+async function runBubble(arr) {
+  const v = new AlgoViz('bubble', arr);
+  v.setCard('running'); v.setStatus('starting…');
+  const t0 = performance.now();
+
+  for (let i = 0; i < v.n - 1; i++) {
+    for (let j = 0; j < v.n - i - 1; j++) {
+      v.cmp++;
+      v.setState(j, 'compare'); v.setState(j+1, 'compare');
+      v.tick(); v.setStatus(`comparing ${v.arr[j]} and ${v.arr[j+1]}`);
+      await sleep(getDelay());
+      v.clearState(j); v.clearState(j+1);
+
+      if (v.arr[j] > v.arr[j+1]) await v.swap(j, j+1);
+      v.tick();
+    }
+    v.setSorted(v.n - 1 - i);
+  }
+  v.setSorted(0);
+
+  const t = Math.round(performance.now() - t0);
+  v.setTime(t); v.setCard('done'); v.setStatus(`done in ${t}ms ✓`, true);
+  return { id: 'bubble', cmp: v.cmp, swp: v.swp, t };
+}
+
+async function runInsertion(arr) {
+  const v = new AlgoViz('insertion', arr);
+  v.setCard('running'); v.setStatus('starting…');
+  const t0 = performance.now();
+  v.setSorted(0);
+
+  for (let i = 1; i < v.n; i++) {
+    v.setState(i, 'compare');
+    v.setStatus(`picking up ${v.arr[i]}`);
+    await sleep(getDelay());
+    v.clearState(i);
+
+    let j = i;
+    while (j > 0 && v.arr[j-1] > v.arr[j]) {
+      v.cmp++;
+      v.setState(j-1, 'compare'); v.setState(j, 'compare');
+      v.tick();
+      await sleep(getDelay() * 0.25);
+      v.clearState(j-1); v.clearState(j);
+      await v.swap(j-1, j);
+      v.tick();
+      j--;
+    }
+    v.setSorted(j);
+  }
+
+  const t = Math.round(performance.now() - t0);
+  v.setTime(t); v.setCard('done'); v.setStatus(`done in ${t}ms ✓`, true);
+  return { id: 'insertion', cmp: v.cmp, swp: v.swp, t };
+}
+
+async function runSelection(arr) {
+  const v = new AlgoViz('selection', arr);
+  v.setCard('running'); v.setStatus('starting…');
+  const t0 = performance.now();
+
+  for (let i = 0; i < v.n - 1; i++) {
+    let minIdx = i;
+    v.setState(minIdx, 'min');
+
+    for (let j = i+1; j < v.n; j++) {
+      v.cmp++;
+      if (j !== minIdx) v.setState(j, 'compare');
+      v.tick(); v.setStatus(`pass ${i+1}: min so far = ${v.arr[minIdx]}`);
+      await sleep(getDelay());
+
+      if (v.arr[j] < v.arr[minIdx]) {
+        v.clearState(minIdx);
+        minIdx = j;
+        v.setState(minIdx, 'min');
+      } else {
+        if (j !== minIdx) v.clearState(j);
+      }
+    }
+
+    v.clearState(minIdx);
+    if (minIdx !== i) { v.clearState(i); await v.swap(i, minIdx); v.tick(); }
+    else { v.clearState(i); }
+    v.setSorted(i);
+  }
+  v.setSorted(v.n - 1);
+
+  const t = Math.round(performance.now() - t0);
+  v.setTime(t); v.setCard('done'); v.setStatus(`done in ${t}ms ✓`, true);
+  return { id: 'selection', cmp: v.cmp, swp: v.swp, t };
+}
+
+async function runMerge(arr) {
+  const v = new AlgoViz('merge', arr);
+  v.setCard('running'); v.setStatus('starting…');
+  const t0 = performance.now();
+
+  // Rotation-based in-place merge: when right[j] < left[i],
+  // rotate right[j] leftward into position i, then advance both pointers.
+  async function merge(l, mInit, r) {
+    let m = mInit;
+    let i = l, j = m + 1;
+    while (i <= m && j <= r) {
+      v.cmp++;
+      v.setState(i, 'compare'); v.setState(j, 'compare');
+      v.tick(); v.setStatus(`merging [${l}..${m}] + [${m+1}..${r}]`);
+      await sleep(getDelay());
+      v.clearState(i); v.clearState(j);
+
+      if (v.arr[i] <= v.arr[j]) {
+        i++;
+      } else {
+        // bubble v.arr[j] leftward to position i
+        let pos = j;
+        while (pos > i) {
+          await v.swap(pos, pos-1, true); // fast, no highlight flash
+          v.tick();
+          pos--;
+        }
+        m++; j++; i++;
+      }
+    }
+  }
+
+  async function sort(l, r) {
+    if (l >= r) return;
+    const mid = (l + r) >> 1;
+    await sort(l, mid);
+    await sort(mid+1, r);
+    await merge(l, mid, r);
+  }
+
+  await sort(0, v.n - 1);
+  v.markAllSorted();
+
+  const t = Math.round(performance.now() - t0);
+  v.setTime(t); v.setCard('done'); v.setStatus(`done in ${t}ms ✓`, true);
+  return { id: 'merge', cmp: v.cmp, swp: v.swp, t };
+}
+
+async function runQuick(arr) {
+  const v = new AlgoViz('quick', arr);
+  v.setCard('running'); v.setStatus('starting…');
+  const t0 = performance.now();
+
+  async function partition(lo, hi) {
+    const pivotVal = v.arr[hi];
+    v.setState(hi, 'pivot');
+    let i = lo - 1;
+
+    for (let j = lo; j < hi; j++) {
+      v.cmp++;
+      v.setState(j, 'compare');
+      v.tick(); v.setStatus(`pivot = ${pivotVal}`);
+      await sleep(getDelay());
+      v.clearState(j);
+
+      if (v.arr[j] <= pivotVal) {
+        i++;
+        if (i !== j) {
+          v.clearState(hi);
+          await v.swap(i, j);
+          v.tick();
+          v.setState(hi, 'pivot');
+        }
+      }
+    }
+
+    v.clearState(hi);
+    const pi = i + 1;
+    if (pi !== hi) { await v.swap(pi, hi); v.tick(); }
+    return pi;
+  }
+
+  async function sort(lo, hi) {
+    if (lo >= hi) { if (lo === hi) v.setSorted(lo); return; }
+    const pi = await partition(lo, hi);
+    v.setSorted(pi);
+    await Promise.all([sort(lo, pi-1), sort(pi+1, hi)]);
+  }
+
+  await sort(0, v.n - 1);
+  v.markAllSorted();
+
+  const t = Math.round(performance.now() - t0);
+  v.setTime(t); v.setCard('done'); v.setStatus(`done in ${t}ms ✓`, true);
+  return { id: 'quick', cmp: v.cmp, swp: v.swp, t };
+}
+
+/* ── UI ── */
+
+function buildSections() {
+  const c = document.getElementById('algoSections');
+  c.innerHTML = '';
+  ALGOS.forEach(a => {
+    const s = document.createElement('div');
+    s.className = 'algo-section';
+    s.id = `section-${a.id}`;
+    s.innerHTML = `
+      <div class="algo-header">
+        <div class="algo-title" style="color:${a.color}">${a.name}</div>
+        <div class="algo-complexity">${a.complexity}</div>
+      </div>
+      <div class="algo-stats">
+        <div class="stat">
+          <div class="stat-val v-cmp" id="cmp-${a.id}">0</div>
+          <div class="stat-lbl">comparisons</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val v-swp" id="swp-${a.id}">0</div>
+          <div class="stat-lbl">swaps</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val v-time" id="time-${a.id}">—</div>
+          <div class="stat-lbl">time</div>
+        </div>
+      </div>
+      <div class="elem-track" id="track-${a.id}"></div>
+      <div class="algo-status" id="status-${a.id}">ready</div>
+    `;
+    c.appendChild(s);
+  });
+}
+
+function renderInitial(array) {
+  ALGOS.forEach(a => new AlgoViz(a.id, array));
+}
+
+function showPerf(results) {
+  const sec = document.getElementById('perfSection');
+  const grid = document.getElementById('perfGrid');
+  sec.style.display = 'block';
+  grid.innerHTML = '';
+  const maxC = Math.max(...results.map(r => r.cmp), 1);
+  const maxS = Math.max(...results.map(r => r.swp), 1);
+  const maxT = Math.max(...results.map(r => r.t),   1);
+  results.forEach(r => {
+    const a = ALGOS.find(x => x.id === r.id);
+    const col = document.createElement('div');
+    col.className = 'perf-col';
+    col.innerHTML = `
+      <div class="perf-algo-name" style="color:${a.color}">${a.name}</div>
+      <div class="perf-row">
+        <div class="perf-label">comparisons</div>
+        <div class="perf-bar-bg"><div class="perf-bar-fill" style="background:${a.color}"></div></div>
+        <div class="perf-num" style="color:${a.color}">${r.cmp}</div>
+      </div>
+      <div class="perf-row">
+        <div class="perf-label">swaps</div>
+        <div class="perf-bar-bg"><div class="perf-bar-fill" style="background:${a.color}88"></div></div>
+        <div class="perf-num" style="color:${a.color}bb">${r.swp}</div>
+      </div>
+      <div class="perf-row">
+        <div class="perf-label">time</div>
+        <div class="perf-bar-bg"><div class="perf-bar-fill" style="background:#56c2e6"></div></div>
+        <div class="perf-num" style="color:#56c2e6">${r.t}ms</div>
+      </div>
+    `;
+    grid.appendChild(col);
+    // Animate bars
+    requestAnimationFrame(() => {
+      const bars = col.querySelectorAll('.perf-bar-fill');
+      bars[0].style.width = (r.cmp/maxC*100).toFixed(1) + '%';
+      bars[1].style.width = (r.swp/maxS*100).toFixed(1) + '%';
+      bars[2].style.width = (r.t  /maxT*100).toFixed(1) + '%';
+    });
+  });
+}
+
+function parseInput() {
+  const raw = document.getElementById('arrayInput').value.trim();
+  if (!raw) return null;
+  const arr = raw.split(',').map(s => parseInt(s.trim(), 10))
+                  .filter(n => !isNaN(n) && n >= 1 && n <= 999);
+  if (arr.length < 2 || arr.length > 30) return null;
+  return arr;
+}
+
+function randomArray(n = 16) {
+  return Array.from({ length: n }, () => Math.floor(Math.random() * 88) + 5);
+}
+
+function setButtons(disabled) {
+  ['btnStart','btnRandom','btnReset'].forEach(id => {
+    document.getElementById(id).disabled = disabled;
+  });
+}
+
+async function startAll() {
+  if (running) return;
+  running = true;
+  setButtons(true);
+  document.getElementById('perfSection').style.display = 'none';
+
+  const custom = parseInput();
+  if (custom) baseArray = custom;
+
+  buildSections();
+  await sleep(60); // let DOM paint so clientWidth is valid
+
+  const results = await Promise.all([
+    runBubble(baseArray),
+    runInsertion(baseArray),
+    runSelection(baseArray),
+    runMerge(baseArray),
+    runQuick(baseArray),
+  ]);
+
+  showPerf(results);
+  running = false;
+  setButtons(false);
+}
+
+document.getElementById('btnStart').addEventListener('click', startAll);
+
+document.getElementById('btnRandom').addEventListener('click', () => {
+  if (running) return;
+  baseArray = randomArray(16);
+  document.getElementById('arrayInput').value = '';
+  document.getElementById('perfSection').style.display = 'none';
+  buildSections();
+  sleep(40).then(() => renderInitial(baseArray));
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (running) return;
+  const custom = parseInput();
+  if (custom) baseArray = custom;
+  document.getElementById('perfSection').style.display = 'none';
+  buildSections();
+  sleep(40).then(() => renderInitial(baseArray));
+});
+
+document.getElementById('speedRange').addEventListener('input', e => {
+  document.getElementById('speedLabel').textContent = SPEED_NAMES[e.target.value];
+});
+
+document.getElementById('arrayInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startAll();
+});
+
+// Init
+baseArray = randomArray(16);
+buildSections();
+sleep(60).then(() => renderInitial(baseArray));
+</script>
+
+<script>
+document.getElementById('readmeToggle').addEventListener('click', function() {
+  this.classList.toggle('open');
+  document.getElementById('readmeBody').classList.toggle('open');
+  this.textContent = this.classList.contains('open') ? '✕ Close README' : '📄 About this project';
+});
+</script>
+</body>
+</html>
